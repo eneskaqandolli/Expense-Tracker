@@ -1,0 +1,185 @@
+{% extends "myapp/base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-8 px-4 py-6 bg-white rounded-lg shadow-md">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">Add Expense +</h2>
+    <form method="POST" class="space-y-6">
+        {% csrf_token %}
+        
+        {% for field in form %}
+        <div class="mb-4">
+            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+            <div class="mt-1">
+                {{ field }}
+            </div>
+            {% if field.errors %}
+            <p class="text-sm text-red-500 mt-1">{{ field.errors }}</p>
+            {% endif %}
+            {% if field.help_text %}
+            <p class="text-sm text-gray-500">{{ field.help_text }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div>
+            <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                Submit
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="max-w-4xl mx-auto mt-8">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">Expenses</h2>
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for expense in expenses %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ expense.name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${{ expense.amount | intcomma }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ expense.category }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ expense.date }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex space-x-2">
+                            <a class="text-blue-600 hover:text-blue-900" href="{% url "myapp:edit" expense.id %}">Edit</a>
+                            <a class="text-red-600 hover:text-red-900" href="{% url "myapp:delete" expense.id %}">Delete</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr class="bg-gray-50">
+                    <td colspan="4" class="px-6 py-4 text-right font-bold text-gray-700">Total:</td>
+                    <td class="px-6 py-4 font-bold text-gray-700">${{ total_expenses | intcomma }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="flex space-x-4 mt-8">
+    <div class="bg-white shadow-md rounded-lg p-6 flex-1">
+        <h3 class="text-xl font-semibold text-gray-800">Yearly Sum</h3>
+        <p class="text-2xl font-bold text-green-500 mt-2">${{ yearly_sum | intcomma }}</p>
+    </div>
+    <div class="bg-white shadow-md rounded-lg p-6 flex-1">
+        <h3 class="text-xl font-semibold text-gray-800">Monthly Sum</h3>
+        <p class="text-2xl font-bold text-green-500 mt-2">${{ monthly_sum | intcomma }}</p>
+    </div>
+    <div class="bg-white shadow-md rounded-lg p-6 flex-1">
+        <h3 class="text-xl font-semibold text-gray-800">Weekly Sum</h3>
+        <p class="text-2xl font-bold text-green-500 mt-2">${{ weekly_sum |intcomma }}</p>
+    </div>
+</div>
+
+<div class="flex justify-center">
+    <div class="w-full md:w-1/2 bg-white rounded-lg shadow-lg m-6">
+        <div class="px-6 py-4 bg-blue-500 text-white">
+            <h2 class="text-2xl font-bold">Past 30 Days Sum Expenses</h2>
+        </div>
+        <hr>
+        <div id="30-day-table">
+            {% for daily_sum in daily_sums %}
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <span class="text-lg">{{ daily_sum.date }}</span>
+                <span class="text-green-500">${{ daily_sum.sum | intcomma }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+
+<div class="flex justify-center">
+    <div class="w-full md:w-1/2 bg-white rounded-lg shadow-lg m-6">
+        <div class="px-6 py-4 bg-blue-500 text-white">
+            <h2 class="text-2xl font-bold">Categorical Expenses</h2>
+        </div>
+        <hr>
+        <div class="px-6 py-4">
+            <canvas id="categoricalChart" width="400" height="400"></canvas>
+        </div>
+        <div id="30-day-table">
+            {% for categorical_sum in categorical_sums %}
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <span class="text-lg">{{ categorical_sum.category }}</span>
+                <span class="text-green-500">${{ categorical_sum.sum | intcomma }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Get data from Django template to JavaScript
+        const categories = [];
+        const sums = [];
+        {% for categorical_sum in categorical_sums %}
+            categories.push("{{ categorical_sum.category }}");
+            sums.push({{ categorical_sum.sum }});
+        {% endfor %}
+
+        // Create Chart.js doughnut chart
+        var ctx = document.getElementById('categoricalChart').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: categories,
+                datasets: [{
+                    label: 'Categorical Expenses',
+                    data: sums,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)',
+                        'rgba(255, 159, 64, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return `${tooltipItem.label}: $${tooltipItem.raw}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+
+
+{% endblock content %}
+
+

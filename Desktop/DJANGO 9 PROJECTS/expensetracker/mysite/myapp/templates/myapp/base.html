@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static "myapp/styles.css" %}">
+    <title>Expense Tracker</title>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <img class="h-8 w-8" src="{% static 'myapp/images/logo.png' %}" alt="Logo"> <!-- Replace 'logo.png' with your actual logo file -->
+                    <span class="ml-2 text-xl font-semibold text-gray-900">Expense Tracker</span> <!-- Replace 'My App Title' with your actual title -->
+                </div>
+                <div class="flex items-center">
+                    {% if user.is_authenticated %}
+                        <!-- User is logged in -->
+                         <form method="POST" action="{% url 'users:logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="ml-4 inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Logout</button>
+                         </form>                      
+                    {% else %}
+                        <!-- User is not logged in -->
+                        <a href="{% url 'users:login' %}" class="ml-4 inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Login</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto px-4 py-6">
+        {% block content %}{% endblock content %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>
